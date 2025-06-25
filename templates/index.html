@@ -1,68 +1,362 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>Recherche Scopus + SCImago</title>
-    <style>
-        body { font-family: Arial; padding: 20px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; }
-        input, select { padding: 5px; width: 100%; }
-        .btn { padding: 10px 20px; background-color: #28a745; color: white; border: none; cursor: pointer; }
-        .btn:hover { background-color: #218838; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scopus Research Explorer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated background particles */
+    .particles {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(180deg); }
+    }
+
+    /* Main container */
+    .container {
+      position: relative;
+      z-index: 10;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    /* Header section */
+    .header {
+      text-align: center;
+      margin-bottom: 60px;
+      animation: slideInDown 1s ease-out;
+    }
+
+    .logo {
+      font-size: 3.5rem;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 20px;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      position: relative;
+    }
+
+    .logo::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 4px;
+      background: linear-gradient(90deg, #ff6b6b, #4ecdc4);
+      border-radius: 2px;
+    }
+
+    .subtitle {
+      font-size: 1.3rem;
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 300;
+      margin-bottom: 10px;
+    }
+
+    .description {
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.7);
+      max-width: 500px;
+      line-height: 1.6;
+    }
+
+    /* Cards container */
+    .cards-container {
+      display: flex;
+      gap: 40px;
+      flex-wrap: wrap;
+      justify-content: center;
+      animation: slideInUp 1s ease-out 0.3s both;
+    }
+
+    /* Search cards */
+    .search-card {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 40px 30px;
+      width: 300px;
+      text-align: center;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .search-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      transition: left 0.6s;
+    }
+
+    .search-card:hover::before {
+      left: 100%;
+    }
+
+    .search-card:hover {
+      transform: translateY(-10px) scale(1.05);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .card-icon {
+      font-size: 4rem;
+      margin-bottom: 20px;
+      display: block;
+      animation: bounce 2s infinite;
+    }
+
+    .card-icon.name-icon {
+      animation-delay: 0s;
+    }
+
+    .card-icon.id-icon {
+      animation-delay: 0.5s;
+    }
+
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-10px); }
+      60% { transform: translateY(-5px); }
+    }
+
+    .card-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: white;
+      margin-bottom: 15px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-description {
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.5;
+      margin-bottom: 25px;
+    }
+
+    .card-button {
+      background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 25px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #ee5a24, #ff6b6b);
+      transition: left 0.3s;
+      z-index: -1;
+    }
+
+    .card-button:hover::before {
+      left: 0;
+    }
+
+    .card-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(238, 90, 36, 0.4);
+    }
+
+    .id-card .card-button {
+      background: linear-gradient(135deg, #4ecdc4, #44a08d);
+    }
+
+    .id-card .card-button::before {
+      background: linear-gradient(135deg, #44a08d, #4ecdc4);
+    }
+
+    .id-card .card-button:hover {
+      box-shadow: 0 10px 20px rgba(68, 160, 141, 0.4);
+    }
+
+    /* Footer */
+    .footer {
+      position: absolute;
+      bottom: 20px;
+      width: 100%;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 0.9rem;
+    }
+
+    /* Animations */
+    @keyframes slideInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideInUp {
+      from {
+        opacity: 0;
+        transform: translateY(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .cards-container {
+        flex-direction: column;
+        gap: 30px;
+      }
+      
+      .search-card {
+        width: 280px;
+      }
+      
+      .logo {
+        font-size: 2.5rem;
+      }
+      
+      .subtitle {
+        font-size: 1.1rem;
+      }
+    }
+  </style>
 </head>
 <body>
-    <h1>🔍 Recherche Scopus + SCImago</h1>
+  <!-- Animated background particles -->
+  <div class="particles" id="particles"></div>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+  <div class="container">
+    <div class="header">
+      <h1 class="logo">Scopus Explorer</h1>
+      <p class="subtitle">Plateforme de Recherche Académique Avancée</p>
+      <p class="description">
+        Explorez et analysez les publications scientifiques avec des données SCImago intégrées. 
+        Recherchez par nom d'auteur ou ID Scopus pour obtenir des rapports détaillés.
+      </p>
+    </div>
 
-    <form method="POST">
-        <div class="form-group">
-            <label>Méthode de recherche :</label>
-            <select name="method" required>
-                <option value="name">Par nom complet</option>
-                <option value="id">Par Scopus ID</option>
-            </select>
-        </div>
+    <div class="cards-container">
+      <div class="search-card name-card">
+        <span class="card-icon name-icon">👤</span>
+        <h2 class="card-title">Recherche par Nom</h2>
+        <p class="card-description">
+          Recherchez les publications d'un auteur en utilisant son prénom et nom de famille
+        </p>
+        <a href="{{ url_for('search', method='name') }}" class="card-button">
+          Commencer la recherche
+        </a>
+      </div>
 
-        <div class="form-group">
-            <label>Prénom :</label>
-            <input type="text" name="first_name">
-        </div>
+      <div class="search-card id-card">
+        <span class="card-icon id-icon">🔍</span>
+        <h2 class="card-title">Recherche par ID</h2>
+        <p class="card-description">
+          Utilisez l'identifiant unique Scopus pour une recherche précise et rapide
+        </p>
+        <a href="{{ url_for('search', method='id') }}" class="card-button">
+          Commencer la recherche
+        </a>
+      </div>
+    </div>
+  </div>
 
-        <div class="form-group">
-            <label>Nom :</label>
-            <input type="text" name="last_name">
-        </div>
+  <div class="footer">
+    <p>Powered by Scopus API & SCImago Journal Rank</p>
+  </div>
 
-        <div class="form-group">
-            <label>ID Scopus :</label>
-            <input type="text" name="scopus_id">
-        </div>
+  <script>
+    // Create animated particles
+    function createParticles() {
+      const particlesContainer = document.getElementById('particles');
+      const particleCount = 50;
 
-        <div class="form-group">
-            <label>Année de publication (facultatif) :</label>
-            <input type="text" name="year">
-        </div>
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        
+        // Random positioning
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.top = Math.random() * 100 + '%';
+        
+        // Random animation delay and duration
+        particle.style.animationDelay = Math.random() * 6 + 's';
+        particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
+        
+        particlesContainer.appendChild(particle);
+      }
+    }
 
-        <div class="form-group">
-            <label>Type d’export :</label>
-            <select name="export_type" required>
-                <option value="1">PDF</option>
-                <option value="2">Excel</option>
-                <option value="3">Les deux</option>
-            </select>
-        </div>
+    // Initialize particles when page loads
+    document.addEventListener('DOMContentLoaded', createParticles);
 
-        <button type="submit" class="btn">Lancer la recherche</button>
-    </form>
+    // Add smooth scroll and hover effects
+    document.querySelectorAll('.search-card').forEach(card => {
+      card.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-10px) scale(1.05)';
+      });
+      
+      card.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0) scale(1)';
+      });
+    });
+  </script>
 </body>
 </html>

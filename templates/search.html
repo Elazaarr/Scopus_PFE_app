@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recherche {{ 'par nom complet' if method == 'name' else 'par Scopus ID' }}</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .search-container {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 40px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+      animation: slideIn 0.6s ease-out;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .search-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+      background-size: 300% 300%;
+      animation: gradientShift 3s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .search-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .search-icon {
+      font-size: 3rem;
+      margin-bottom: 15px;
+      color: #667eea;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .search-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    .search-subtitle {
+      color: #7f8c8d;
+      font-size: 1rem;
+    }
+
+    .form-group {
+      margin-bottom: 25px;
+      position: relative;
+    }
+
+    .form-label {
+      display: block;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+
+    .form-input, .form-select {
+      width: 100%;
+      padding: 15px 20px;
+      border: 2px solid #e0e6ed;
+      border-radius: 12px;
+      font-size: 1rem;
+      background: white;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .form-input::placeholder {
+      color: #bdc3c7;
+    }
+
+    /* Floating label effect */
+    .floating-label {
+      position: relative;
+    }
+
+    .floating-label input {
+      padding-top: 20px;
+    }
+
+    .floating-label label {
+      position: absolute;
+      left: 20px;
+      top: 15px;
+      color: #bdc3c7;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+
+    .floating-label input:focus + label,
+    .floating-label input:not(:placeholder-shown) + label {
+      top: 5px;
+      font-size: 0.8rem;
+      color: #667eea;
+      font-weight: 600;
+    }
+
+    .form-select {
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+      background-position: right 12px center;
+      background-repeat: no-repeat;
+      background-size: 16px;
+      appearance: none;
+    }
+
+    .submit-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 18px;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .submit-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+      transition: left 0.3s ease;
+      z-index: 0;
+    }
+
+    .submit-btn:hover::before {
+      left: 0;
+    }
+
+    .submit-btn span {
+      position: relative;
+      z-index: 1;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 30px rgba(102, 126, 234, 0.4);
+    }
+
+    .submit-btn:active {
+      transform: translateY(-1px);
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
+      margin-bottom: 20px;
+      transition: all 0.3s ease;
+    }
+
+    .back-link:hover {
+      color: #764ba2;
+      transform: translateX(-5px);
+    }
+
+    .back-link::before {
+      content: '←';
+      margin-right: 8px;
+      font-size: 1.2rem;
+    }
+
+    /* Form validation styles */
+    .form-input:invalid {
+      border-color: #e74c3c;
+    }
+
+    .form-input:valid {
+      border-color: #27ae60;
+    }
+
+    /* Loading state */
+    .submit-btn.loading {
+      pointer-events: none;
+      opacity: 0.8;
+    }
+
+    .submit-btn.loading::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      top: 50%;
+      left: 50%;
+      margin-left: -10px;
+      margin-top: -10px;
+      border: 2px solid transparent;
+      border-top: 2px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .search-container {
+        margin: 10px;
+        padding: 30px 25px;
+      }
+      
+      .search-title {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="search-container">
+    <a href="{{ url_for('home') }}" class="back-link">Retour à l'accueil</a>
+    
+    <div class="search-header">
+      <div class="search-icon">
+        {% if method == 'name' %}👤{% else %}🔍{% endif %}
+      </div>
+      <h1 class="search-title">
+        {% if method == 'name' %}Recherche par Nom{% else %}Recherche par ID Scopus{% endif %}
+      </h1>
+      <p class="search-subtitle">
+        {% if method == 'name' %}
+          Entrez le prénom et nom de l'auteur
+        {% else %}
+          Entrez l'identifiant unique Scopus
+        {% endif %}
+      </p>
+    </div>
+
+    <form method="POST" action="{{ url_for('results') }}" id="searchForm">
+      <input type="hidden" name="method" value="{{ method }}">
+
+      {% if method == 'name' %}
+        <div class="form-group floating-label">
+          <input type="text" name="first_name" class="form-input" placeholder=" " required>
+          <label class="form-label">Prénom</label>
+        </div>
+        
+        <div class="form-group floating-label">
+          <input type="text" name="last_name" class="form-input" placeholder=" " required>
+          <label class="form-label">Nom de famille</label>
+        </div>
+      {% else %}
+        <div class="form-group floating-label">
+          <input type="text" name="scopus_id" class="form-input" placeholder=" " required>
+          <label class="form-label">Scopus ID</label>
+        </div>
+      {% endif %}
+
+      <div class="form-group floating-label">
+        <input type="number" name="year" class="form-input" placeholder=" " id="yearInput">
+        <label class="form-label">Année de publication (optionnel)</label>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Type d'export</label>
+        <select name="export_type" class="form-select" required>
+          <option value="">Choisissez un format</option>
+          <option value="pdf">📄 PDF</option>
+          <option value="excel">📊 Excel</option>
+          <option value="both">📄📊 PDF + Excel</option>
+        </select>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submitBtn">
+        <span>Lancer la recherche</span>
+      </button>
+    </form>
+  </div>
+
+  <script>
+    // Form handling
+    const form = document.getElementById('searchForm');
+    const submitBtn = document.getElementById('submitBtn');
+
+    form.addEventListener('submit', function(e) {
+      submitBtn.classList.add('loading');
+      submitBtn.innerHTML = '<span>Recherche en cours...</span>';
+    });
+
+    // Input animations
+    document.querySelectorAll('.form-input').forEach(input => {
+      input.addEventListener('focus', function() {
+        this.parentElement.style.transform = 'scale(1.02)';
+      });
+      
+      input.addEventListener('blur', function() {
+        this.parentElement.style.transform = 'scale(1)';
+      });
+    });
+
+    // Auto-format Scopus ID (if applicable)
+    const scopusInput = document.querySelector('input[name="scopus_id"]');
+    if (scopusInput) {
+      scopusInput.addEventListener('input', function() {
+        // Remove any non-digit characters for cleaner display
+        this.value = this.value.replace(/[^\d]/g, '');
+      });
+    }
+  </script>
+</body>
+</html>

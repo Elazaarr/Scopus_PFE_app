@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Résultats de recherche Scopus - {{ name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .header .author-name {
+            font-size: 1.2rem;
+            font-weight: 300;
+            opacity: 0.9;
+        }
+
+        .container {
+            display: flex;
+            max-width: 98vw;
+            margin: 0 auto;
+            padding: 15px 10px;
+            gap: 15px;
+            height: calc(100vh - 80px);
+        }
+
+        /* Sidebar - Plus compacte */
+        .sidebar {
+            width: 250px;
+            flex-shrink: 0;
+        }
+
+        .stats-card, .download-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+        }
+
+        .stats-number {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .stats-label {
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
+
+        .download-card h3 {
+            color: #2c3e50;
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .download-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            padding: 10px 14px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .download-btn.pdf {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+        }
+
+        .download-btn.excel {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            color: white;
+        }
+
+        .download-btn:not(:disabled):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .download-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .back-btn {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+            justify-content: center;
+        }
+
+        /* Content area - Maximise l'espace */
+        .content {
+            flex: 1;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content-header {
+            padding: 20px 25px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-bottom: 1px solid #dee2e6;
+            flex-shrink: 0;
+        }
+
+        .content-title {
+            color: #2c3e50;
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .search-info {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            border-left: 4px solid #2196f3;
+            font-size: 0.9rem;
+        }
+
+        .search-info strong {
+            color: #1976d2;
+        }
+
+        .search-filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .filter-input {
+            padding: 8px 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        /* Publications table - Zone maximisée avec hauteur augmentée */
+        .publications-container {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: calc(100vh - 300px);
+        }
+
+        .table-wrapper {
+            flex: 1;
+            overflow: auto;
+            border-radius: 0 0 12px 12px;
+            min-height: calc(100vh - 350px);
+        }
+
+        .publications-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            min-width: 1200px;
+        }
+
+        .publications-table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 10px 6px;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            font-size: 0.85rem;
+            line-height: 1.2;
+        }
+
+        .publications-table td {
+            padding: 10px 6px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: top;
+            font-size: 0.8rem;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .publications-table tr:hover {
+            background: linear-gradient(135deg, #f8f9ff, #f0f2ff);
+        }
+
+        /* Optimisation des largeurs des colonnes */
+        .publications-table th:nth-child(1),
+        .publications-table td:nth-child(1) { width: 3%; text-align: center; } /* N° */
+        
+        .publications-table th:nth-child(2),
+        .publications-table td:nth-child(2) { width: 32%; } /* Titre - Plus large */
+        
+        .publications-table th:nth-child(3),
+        .publications-table td:nth-child(3) { width: 22%; } /* Journal - Plus large */
+        
+        .publications-table th:nth-child(4),
+        .publications-table td:nth-child(4) { width: 18%; } /* Co-auteurs */
+        
+        .publications-table th:nth-child(5),
+        .publications-table td:nth-child(5) { width: 5%; text-align: center; } /* Année */
+        
+        .publications-table th:nth-child(6),
+        .publications-table td:nth-child(6) { width: 6%; text-align: center; } /* Citations */
+        
+        .publications-table th:nth-child(7),
+        .publications-table td:nth-child(7) { width: 5%; text-align: center; } /* SJR */
+        
+        .publications-table th:nth-child(8),
+        .publications-table td:nth-child(8) { width: 5%; text-align: center; } /* H-Index */
+        
+        .publications-table th:nth-child(9),
+        .publications-table td:nth-child(9) { width: 6%; text-align: center; } /* Quartile */
+        
+        .publications-table th:nth-child(10),
+        .publications-table td:nth-child(10) { width: 8%; text-align: center; } /* ISSN */
+
+        .publication-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+            line-height: 1.3;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .publication-journal {
+            color: #667eea;
+            font-size: 0.75rem;
+            font-style: italic;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .publication-year {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .coauthors-list {
+            font-size: 0.75rem;
+            color: #6c757d;
+            line-height: 1.2;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .coauthors-list .author-name {
+            color: #495057;
+            font-weight: 500;
+        }
+
+        .citations-count {
+            font-weight: 700;
+            color: #e74c3c;
+            text-align: center;
+            padding: 3px 6px;
+            border-radius: 4px;
+            background: linear-gradient(135deg, #fff5f5, #fee);
+            border: 1px solid #fecaca;
+            min-width: 30px;
+            display: inline-block;
+            font-size: 0.75rem;
+        }
+
+        .citations-high {
+            color: #27ae60;
+            background: linear-gradient(135deg, #f0fff4, #dcfce7);
+            border-color: #bbf7d0;
+        }
+
+        .citations-medium {
+            color: #f39c12;
+            background: linear-gradient(135deg, #fffbeb, #fef3c7);
+            border-color: #fde68a;
+        }
+
+        .quartile-badge {
+            display: inline-block;
+            padding: 3px 6px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            min-width: 22px;
+            text-align: center;
+        }
+
+        .quartile-q1 {
+            background: linear-gradient(135deg, #4caf50, #388e3c);
+            color: white;
+        }
+
+        .quartile-q2 {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            color: white;
+        }
+
+        .quartile-q3 {
+            background: linear-gradient(135deg, #ff5722, #d84315);
+            color: white;
+        }
+
+        .quartile-q4 {
+            background: linear-gradient(135deg, #9e9e9e, #616161);
+            color: white;
+        }
+
+        .quartile-na {
+            background: linear-gradient(135deg, #e0e0e0, #bdbdbd);
+            color: #757575;
+        }
+
+        .metric-value {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.75rem;
+        }
+
+        .issn-value {
+            font-family: 'Courier New', monospace;
+            font-size: 0.7rem;
+            color: #6c757d;
+            word-wrap: break-word;
+        }
+
+        .no-publications {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .no-publications h3 {
+            font-size: 1.4rem;
+            margin-bottom: 12px;
+            color: #495057;
+        }
+
+        /* Pagination compacte */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+            gap: 8px;
+            flex-shrink: 0;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination button.active {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Flash messages */
+        .flash-messages {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .flash-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border: 1px solid #f5c6cb;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            animation: slideInRight 0.3s ease;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Responsive design optimisé */
+        @media (max-width: 1400px) {
+            .sidebar {
+                width: 230px;
+            }
+            
+            .publications-table {
+                min-width: 1100px;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                max-width: 96vw;
+                padding: 10px 5px;
+            }
+            
+            .sidebar {
+                width: 220px;
+            }
+            
+            .publications-table {
+                min-width: 1000px;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                flex-direction: column;
+                height: auto;
+                max-width: 98vw;
+                padding: 10px;
+            }
+            
+            .sidebar {
+                width: 100%;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
+            }
+
+            .stats-card, .download-card {
+                margin-bottom: 0;
+            }
+            
+            .content {
+                height: 80vh;
+            }
+
+            .publications-container {
+                min-height: calc(80vh - 200px);
+            }
+
+            .table-wrapper {
+                min-height: calc(80vh - 250px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .header .author-name {
+                font-size: 1rem;
+            }
+            
+            .sidebar {
+                grid-template-columns: 1fr;
+            }
+            
+            .publications-table {
+                font-size: 0.75rem;
+                min-width: 900px;
+            }
+            
+            .publications-table th,
+            .publications-table td {
+                padding: 6px 4px;
+            }
+            
+            .search-filters {
+                grid-template-columns: 1fr;
+            }
+            
+            .content {
+                height: 75vh;
+            }
+
+            .publications-container {
+                min-height: calc(75vh - 180px);
+            }
+
+            .table-wrapper {
+                min-height: calc(75vh - 230px);
+            }
+        }
+        
+        /* Scrollbar styling pour webkit browsers */
+        .table-wrapper::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        .table-wrapper::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        .table-wrapper::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+        
+        .table-wrapper::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+    </style>
+</head>
+<body>
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="header">
+        <h1>Résultats de recherche Scopus</h1>
+        <div class="author-name">{{ name }}</div>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="stats-card">
+                <div class="stats-number" id="totalCount">{{ total }}</div>
+                <div class="stats-label">Publications trouvées</div>
+            </div>
+
+            <div class="download-card">
+                <h3>📊 Exporter les résultats</h3>
+                
+                <!-- PDF Download Button -->
+                {% if pdf_file %}
+                    <a href="{{ url_for('download_file', filename=pdf_file) }}" class="download-btn pdf">
+                        📄 Télécharger PDF
+                    </a>
+                {% else %}
+                    <button class="download-btn pdf" disabled>
+                        📄 PDF non disponible
+                    </button>
+                {% endif %}
+
+                <!-- Excel Download Button -->
+                {% if excel_file %}
+                    <a href="{{ url_for('download_file', filename=excel_file) }}" class="download-btn excel">
+                        📊 Télécharger Excel
+                    </a>
+                {% else %}
+                    <button class="download-btn excel" disabled>
+                        📊 Excel non disponible
+                    </button>
+                {% endif %}
+
+                <a href="{{ url_for('home') }}" class="download-btn back-btn">
+                    ← Nouvelle recherche
+                </a>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="content-header">
+                <h2 class="content-title">Publications Scopus</h2>
+                <div class="search-info">
+                    <strong>Auteur recherché :</strong> {{ name.replace('Scopus ID : ', '') if 'Scopus ID : ' in name else name }}<br>
+                    <strong>Nombre de résultats :</strong> {{ total }} publication{{ 's' if total != 1 else '' }}
+                </div>
+                
+                {% if publications %}
+                <div class="search-filters">
+                    <input type="text" class="filter-input" placeholder="Filtrer par titre..." id="titleFilter">
+                    <input type="text" class="filter-input" placeholder="Filtrer par journal..." id="journalFilter">
+                    <input type="text" class="filter-input" placeholder="Filtrer par co-auteur..." id="coauthorFilter">
+                    <select class="filter-input" id="yearFilter">
+                        <option value="">Toutes les années</option>
+                    </select>
+                    <select class="filter-input" id="quartileFilter">
+                        <option value="">Tous les quartiles</option>
+                        <option value="Q1">Q1</option>
+                        <option value="Q2">Q2</option>
+                        <option value="Q3">Q3</option>
+                        <option value="Q4">Q4</option>
+                    </select>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="publications-container">
+                {% if publications %}
+                    <div class="table-wrapper">
+                        <table class="publications-table" id="publicationsTable">
+                            <thead>
+                                <tr>
+                                    <th>N°</th>
+                                    <th>Titre</th>
+                                    <th>Journal</th>
+                                    <th>Co-auteurs</th>
+                                    <th>Année</th>
+                                    <th>Citations</th>
+                                    <th>SJR</th>
+                                    <th>H-Index</th>
+                                    <th>Quartile</th>
+                                    <th>ISSN</th>
+                                </tr>
+                            </thead>
+                            <tbody id="publicationsTableBody">
+                                {% for pub in publications %}
+                                <tr>
+                                    <td>{{ pub.number }}</td>
+                                    <td>
+                                        <div class="publication-title">{{ pub.title or 'Sans titre' }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="publication-journal">{{ pub.journal or 'Journal non spécifié' }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="coauthors-list">
+                                            {{ pub.coauthors or 'Non spécifiés' }}
+                                        </div>
+                                    </td>
+                                    <td class="publication-year">
+                                        {{ pub.year if pub.year and pub.year != 'No date' else '-' }}
+                                    </td>
+                                    <td>
+                                        {% set citations = pub.citations if pub.citations and pub.citations != 'N/A' else '0' %}
+                                        {% set citations_num = citations|int if citations.isdigit() else 0 %}
+                                        {% set citation_class = 'citations-count' %}
+                                        {% if citations_num >= 50 %}
+                                            {% set citation_class = citation_class + ' citations-high' %}
+                                        {% elif citations_num >= 10 %}
+                                            {% set citation_class = citation_class + ' citations-medium' %}
+                                        {% endif %}
+                                        <span class="{{ citation_class }}">{{ citations }}</span>
+                                    </td>
+                                    <td class="metric-value">
+                                        {{ pub.sjr if pub.sjr and pub.sjr != 'N/A' else '-' }}
+                                    </td>
+                                    <td class="metric-value">
+                                        {{ pub.h_index if pub.h_index and pub.h_index != 'N/A' else '-' }}
+                                    </td>
+                                    <td>
+                                        {% set quartile_class = 'quartile-na' %}
+                                        {% if pub.quartile and pub.quartile != 'N/A' %}
+                                            {% if pub.quartile.lower() == 'q1' %}
+                                                {% set quartile_class = 'quartile-q1' %}
+                                            {% elif pub.quartile.lower() == 'q2' %}
+                                                {% set quartile_class = 'quartile-q2' %}
+                                            {% elif pub.quartile.lower() == 'q3' %}
+                                                {% set quartile_class = 'quartile-q3' %}
+                                            {% elif pub.quartile.lower() == 'q4' %}
+                                                {% set quartile_class = 'quartile-q4' %}
+                                            {% endif %}
+                                        {% endif %}
+                                        <span class="quartile-badge {{ quartile_class }}">
+                                            {{ pub.quartile if pub.quartile and pub.quartile != 'N/A' else '-' }}
+                                        </span>
+                                    </td>
+                                    <td class="issn-value">
+                                        {{ pub.issn if pub.issn and pub.issn != 'N/A' else '-' }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="pagination" id="paginationContainer">
+                        <button onclick="changePage(-1)" id="prevBtn">← Précédent</button>
+                        <div id="pageNumbers"></div>
+                        <button onclick="changePage(1)" id="nextBtn">Suivant →</button>
+                    </div>
+                {% else %}
+                    <div class="no-publications">
+                        <h3>🔍 Aucune publication trouvée</h3>
+                        <p>Aucun résultat ne correspond à vos critères de recherche.</p>
+                        <p>Essayez de modifier vos paramètres de recherche.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Données des publications injectées depuis le backend Flask
+        const publicationsData = {{ publications|tojson|safe }};
+        let filteredData = [...publicationsData];
+        let currentPage = 1;
+        const itemsPerPage = 25; // Augmenté pour profiter de l'espace
+        
+        // Total original pour référence
+        const originalTotal = {{ total }};
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            if (publicationsData && publicationsData.length > 0) {
+                populateYearFilter();
+                setupEventListeners();
+                renderTable();
+            }
+        });
+
+        function populateYearFilter() {
+            const years = [...new Set(publicationsData.map(pub => pub.year))]
+                .filter(year => year && year !== 'No date' && year !== null && year !== undefined)
+                .sort()
+                .reverse();
+            
+            const yearFilter = document.getElementById('yearFilter');
+            
+            years.forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearFilter.appendChild(option);
+            });
+        }
+
+        function filterPublications() {
+            const titleFilter = document.getElementById('titleFilter').value.toLowerCase().trim();
+            const journalFilter = document.getElementById('journalFilter').value.toLowerCase().trim();
+            const coauthorFilter = document.getElementById('coauthorFilter').value.toLowerCase().trim();
+            const yearFilter = document.getElementById('yearFilter').value;
+            const quartileFilter = document.getElementById('quartileFilter').value;
+
+            filteredData = publicationsData.filter(pub => {
+                const matchesTitle = !titleFilter || (pub.title || '').toLowerCase().includes(titleFilter);
+                const matchesJournal = !journalFilter || (pub.journal || '').toLowerCase().includes(journalFilter);
+                const matchesCoauthor = !coauthorFilter || (pub.coauthors || '').toLowerCase().includes(coauthorFilter);
+                const matchesYear = !yearFilter || String(pub.year) === yearFilter;
+                const matchesQuartile = !quartileFilter || (pub.quartile || '').toLowerCase() === quartileFilter.toLowerCase();
+                
+                return matchesTitle && matchesJournal && matchesCoauthor && matchesYear && matchesQuartile;
+            });
+
+            // Mettre à jour le compteur
+            document.getElementById('totalCount').textContent = filteredData.length;
+            currentPage = 1;
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('publicationsTableBody');
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageData = filteredData.slice(startIndex, endIndex);
+
+            tbody.innerHTML = pageData.map(pub => {
+                const quartileClass = getQuartileClass(pub.quartile);
+                const quartileDisplay = pub.quartile && pub.quartile !== 'N/A' ? pub.quartile : '-';
+                
+                // Formatage des citations avec classes CSS
+                const citations = pub.citations && pub.citations !== 'N/A' ? pub.citations : '0';
+                const citationsNum = parseInt(citations) || 0;
+                let citationClass = 'citations-count';
+                if (citationsNum >= 50) {
+                    citationClass += ' citations-high';
+                } else if (citationsNum >= 10) {
+                    citationClass += ' citations-medium';
+                }
+                
+                return `
+                    <tr>
+                        <td>${pub.number || '-'}</td>
+                        <td>
+                            <div class="publication-title">${pub.title || 'Sans titre'}</div>
+                        </td>
+                        <td>
+                            <div class="publication-journal">${pub.journal || 'Journal non spécifié'}</div>
+                        </td>
+                        <td>
+                            <div class="coauthors-list">${pub.coauthors || 'Non spécifiés'}</div>
+                        </td>
+                        <td class="publication-year">${pub.year && pub.year !== 'No date' ? pub.year : '-'}</td>
+                        <td><span class="${citationClass}">${citations}</span></td>
+                        <td class="metric-value">${pub.sjr && pub.sjr !== 'N/A' ? pub.sjr : '-'}</td>
+                        <td class="metric-value">${pub.h_index && pub.h_index !== 'N/A' ? pub.h_index : '-'}</td>
+                        <td><span class="quartile-badge ${quartileClass}">${quartileDisplay}</span></td>
+                        <td class="issn-value">${pub.issn && pub.issn !== 'N/A' ? pub.issn : '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            updatePagination();
+        }
+
+        function getQuartileClass(quartile) {
+            const q = (quartile || '').toLowerCase();
+            if (q === 'q1') return 'quartile-q1';
+            if (q === 'q2') return 'quartile-q2';
+            if (q === 'q3') return 'quartile-q3';
+            if (q === 'q4') return 'quartile-q4';
+            return 'quartile-na';
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            const pageNumbers = document.getElementById('pageNumbers');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+
+            // Update navigation buttons
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages;
+
+            // Generate page numbers
+            pageNumbers.innerHTML = '';
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+            if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const button = document.createElement('button');
+                button.textContent = i;
+                button.onclick = () => goToPage(i);
+                if (i === currentPage) {
+                    button.classList.add('active');
+                }
+                pageNumbers.appendChild(button);
+            }
+        }
+
+        function changePage(direction) {
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            const newPage = currentPage + direction;
+            
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                renderTable();
+            }
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            renderTable();
+        }
+
+        function setupEventListeners() {
+            // Debounce pour les champs de texte pour améliorer les performances
+            let titleTimeout, journalTimeout, coauthorTimeout;
+            
+            document.getElementById('titleFilter').addEventListener('input', function() {
+                clearTimeout(titleTimeout);
+                titleTimeout = setTimeout(filterPublications, 300);
+            });
+            
+            document.getElementById('journalFilter').addEventListener('input', function() {
+                clearTimeout(journalTimeout);
+                journalTimeout = setTimeout(filterPublications, 300);
+            });
+            
+            document.getElementById('coauthorFilter').addEventListener('input', function() {
+                clearTimeout(coauthorTimeout);
+                coauthorTimeout = setTimeout(filterPublications, 300);
+            });
+            
+            document.getElementById('yearFilter').addEventListener('change', filterPublications);
+            document.getElementById('quartileFilter').addEventListener('change', filterPublications);
+        }
+
+        // Auto-hide flash messages
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(message => {
+                setTimeout(() => {
+                    message.style.animation = 'slideInRight 0.3s ease reverse';
+                    setTimeout(() => message.remove(), 300);
+                }, 5000);
+            });
+        });
+    </script>
+</body>
+</html>

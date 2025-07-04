@@ -9,8 +9,6 @@ from textwrap import wrap
 import os
 import time
 
-API_KEY = "b5d10d3891de0bbb191c841099881256"
-
 # 🔍 Chargement des données SCImago depuis le CSV - VERSION AMÉLIORÉE
 def load_scimago_data(csv_path):
     scimago_info = {}
@@ -196,9 +194,7 @@ def improved_journal_matching(journal_name, scimago_data):
 
 #  NOUVELLE FONCTION - Débogage des journaux
 def debug_journal_matching(journal_name, scimago_data, csv_path):
-    """
-    Fonction de débogage pour analyser pourquoi un journal n'est pas trouvé
-    """
+   
     print(f"\n=== 🔍 DÉBOGAGE POUR: {journal_name} ===")
     
     journal_key = journal_name.strip().lower()
@@ -275,11 +271,11 @@ def get_all_publications(query, headers):
     all_entries = []
     start = 0
     count = 25
-    
+
     while True:
         url = f"https://api.elsevier.com/content/search/scopus?query={query}&start={start}&count={count}"
-        response = requests.get(url, headers=headers)
-        
+        response = requests.get(url, headers=headers, timeout=10)
+
         if response.status_code != 200:
             print(f"Erreur API: {response.status_code}")
             if response.status_code == 429:
@@ -287,25 +283,25 @@ def get_all_publications(query, headers):
                 time.sleep(5)
                 continue
             break
-            
+
         data = response.json()
         entries = data.get("search-results", {}).get("entry", [])
-        
+
         if not entries:
             break
-            
+
         all_entries.extend(entries)
-        
+
         total_results = int(data.get("search-results", {}).get("opensearch:totalResults", 0))
         start += count
-        
+
         print(f"Récupéré {len(all_entries)} sur {total_results} publications...")
-        
+
         if start >= total_results:
             break
-        
+
         time.sleep(0.2)
-    
+
     return all_entries
 
 def get_coauthors(pub_data, headers):
@@ -346,7 +342,7 @@ def get_coauthors(pub_data, headers):
         if scopus_id:
             try:
                 abstract_url = f"https://api.elsevier.com/content/abstract/scopus_id/{scopus_id}"
-                response = requests.get(abstract_url, headers=headers)
+                response = requests.get(abstract_url, headers=headers, timeout=10)
                 
                 if response.status_code == 200:
                     abstract_data = response.json()
@@ -441,11 +437,11 @@ def get_citations_count(pub_data, headers):
             time.sleep(0.1)
             
             abstract_url = f"https://api.elsevier.com/content/abstract/scopus_id/{scopus_id}?view=COMPLETE"
-            abstract_response = requests.get(abstract_url, headers=headers)
-            
+            abstract_response = requests.get(abstract_url, headers=headers, timeout=10)
+
             if abstract_response.status_code == 429:
                 time.sleep(2)
-                abstract_response = requests.get(abstract_url, headers=headers)
+                abstract_response = requests.get(abstract_url, headers=headers, timeout=10)
             
             if abstract_response.status_code == 200:
                 abstract_data = abstract_response.json()
@@ -457,6 +453,64 @@ def get_citations_count(pub_data, headers):
             pass
     
     return citations_from_search if citations_from_search else "0"
+
+def get_document_type(pub_data):
+    """
+    Extrait et normalise le type de document depuis les données Scopus
+    """
+    # Types de documents possibles dans Scopus
+    document_types = {
+        'ar': 'Article',
+        'cp': 'Conference Paper',
+        'ch': 'Book Chapter', 
+        'bk': 'Book',
+        're': 'Review',
+        'le': 'Letter',
+        'ed': 'Editorial',
+        'no': 'Note',
+        'sh': 'Short Survey',
+        'ip': 'Article in Press',
+        'ab': 'Abstract Report',
+        'wp': 'Working Paper',
+        'cr': 'Conference Review',
+        'rp': 'Report',
+        'tb': 'Trade Publication',
+        'dp': 'Data Paper',
+        'er': 'Erratum'
+    }
+    
+    # Méthode 1: Champ subtypeDescription (le plus fiable)
+    subtype_desc = pub_data.get("subtypeDescription", "")
+    if subtype_desc:
+        return subtype_desc
+    
+    # Méthode 2: Champ subtype avec mapping
+    subtype = pub_data.get("subtype", "")
+    if subtype and subtype.lower() in document_types:
+        return document_types[subtype.lower()]
+    
+    # Méthode 3: Analyse du nom de publication pour détecter les conférences
+    publication_name = pub_data.get("prism:publicationName", "").lower()
+    conference_keywords = [
+        'proceedings', 'conference', 'symposium', 'workshop', 
+        'congress', 'meeting', 'summit', 'forum'
+    ]
+    
+    if any(keyword in publication_name for keyword in conference_keywords):
+        return "Conference Paper"
+    
+    # Méthode 4: Champ aggregationType
+    aggregation_type = pub_data.get("prism:aggregationType", "")
+    if aggregation_type:
+        if aggregation_type.lower() == "journal":
+            return "Article"
+        elif aggregation_type.lower() == "book":
+            return "Book Chapter"
+        elif aggregation_type.lower() == "conference proceeding":
+            return "Conference Paper"
+    
+    # Valeur par défaut
+    return "Article"
 
 # 📄 Classe PDF personnalisée
 class PDF(FPDF):
@@ -536,13 +590,15 @@ class PDF(FPDF):
             self.ln(row_height)
 
 # 🔁 Fonction principale AMÉLIORÉE
-def run_search(method, first_name=None, last_name=None, scopus_id=None, year=None, export_type="pdf", csv_path="scimagojr 2024.csv", debug_mode=False):
+def run_search(method, api_key, first_name=None, last_name=None, scopus_id=None, year=None, export_type="pdf", csv_path="scimagojr 2024.csv", debug_mode=False):
     """
     Fonction principale améliorée avec matching intelligent des journaux
-    
+
     Args:
+        api_key (str): Clé API Scopus pour l'authentification
         debug_mode (bool): Active le mode débogage pour les journaux non trouvés
     """
+
     # Create output directory if it doesn't exist
     output_dir = "output"
     if not os.path.exists(output_dir):
@@ -553,7 +609,7 @@ def run_search(method, first_name=None, last_name=None, scopus_id=None, year=Non
     print(f"✅ {len(scimago_data)} entrées SCImago chargées")
     
     headers = {
-        "X-ELS-APIKey": API_KEY,
+        "X-ELS-APIKey": api_key,
         "Accept": "application/json"
     }
 
@@ -571,7 +627,7 @@ def run_search(method, first_name=None, last_name=None, scopus_id=None, year=Non
         if year:
             query += f" AND PUBYEAR IS {year}"
         author_info_url = f"https://api.elsevier.com/content/author/author_id/{scopus_id}"
-        author_response = requests.get(author_info_url, headers=headers)
+        author_response = requests.get(author_info_url, headers=headers, timeout=10)
         if author_response.status_code == 200:
             author_data = author_response.json()
             author_name = author_data.get("author-retrieval-response", [{}])[0].get("preferred-name", {})
@@ -583,7 +639,58 @@ def run_search(method, first_name=None, last_name=None, scopus_id=None, year=Non
 
     print(f"🔍 Recherche des publications pour: {full_name}")
     entries = get_all_publications(query, headers)
-    print(f"📚 {len(entries)} publications trouvées")
+    print(f"📚 {len(entries)} publications brutes trouvées")
+
+    # 🚨 PREMIÈRE VÉRIFICATION : Si aucune publication trouvée
+    if not entries:
+        print(f"❌ Aucune publication trouvée pour {full_name}")
+        year_text = f" en {year}" if year else ""
+        return {
+            "data": [],
+            "file": {
+                "pdf": None,
+                "excel": None
+            },
+            "stats": {
+                "total_publications": 0,
+                "journals_found": 0,
+                "journals_not_found": 0,
+                "success_rate": 0
+            },
+            "message": f"Aucune publication trouvée pour '{full_name}'{year_text}. Vérifiez l'orthographe du nom ou essayez avec l'ID Scopus de l'auteur."
+        }
+
+    # 🔍 FILTRAGE : Supprimer les publications sans titre valide
+    valid_entries = []
+    for pub in entries:
+        title = pub.get("dc:title", "").strip()
+        # Filtrer les publications sans titre ou avec des titres non valides
+        if title and title not in ["No title", "", "N/A", "null", "undefined"]:
+            valid_entries.append(pub)
+
+    print(f"📚 {len(valid_entries)} publications valides après filtrage")
+
+    # 🚨 DEUXIÈME VÉRIFICATION : Si aucune publication valide après filtrage
+    if not valid_entries:
+        print(f"❌ Aucune publication valide trouvée pour {full_name}")
+        year_text = f" en {year}" if year else ""
+        return {
+            "data": [],
+            "file": {
+                "pdf": None,
+                "excel": None
+            },
+            "stats": {
+                "total_publications": 0,
+                "journals_found": 0,
+                "journals_not_found": 0,
+                "success_rate": 0
+            },
+            "message": f"Aucune publication trouvée pour '{full_name}'{year_text}. Vérifiez l'orthographe du nom ou essayez avec l'ID Scopus de l'auteur."
+        }
+
+    # Utiliser les publications valides pour la suite
+    entries = valid_entries
 
     results = []
     journals_not_found = []
@@ -591,14 +698,25 @@ def run_search(method, first_name=None, last_name=None, scopus_id=None, year=Non
     
     for i, pub in enumerate(entries, start=1):
         print(f"⏳ Traitement publication {i}/{len(entries)}")
-        
-        title = pub.get("dc:title", "No title")
+
+        # Récupération du titre (déjà filtré, donc doit être valide)
+        title = pub.get("dc:title", "").strip()
+        if not title:  # Sécurité supplémentaire
+            title = "Sans titre"
+
         journal = pub.get("prism:publicationName", "No journal")
         date = pub.get("prism:coverDate", "No date")
-        
+
+        # Extraction du DOI
+        doi = pub.get("prism:doi", "-")
+        if not doi or doi == "":
+            doi = "-"
+
         citations_count = get_citations_count(pub, headers)
         coauthors = get_coauthors(pub, headers)
         
+        document_type = get_document_type(pub)
+
         # 🔥 NOUVEAU MATCHING INTELLIGENT
         journal_info = improved_journal_matching(journal, scimago_data)
         
@@ -614,7 +732,7 @@ def run_search(method, first_name=None, last_name=None, scopus_id=None, year=Non
         quartile = journal_info.get("quartile", "-")
         issn = journal_info.get("issn", "-")
 
-        results.append([i, title, journal, date, citations_count, coauthors, sjr, h_index, quartile, issn])
+        results.append([i, title, journal, date, document_type, citations_count, coauthors, sjr, h_index, quartile, issn, doi])
 
     # 📊 Rapport final
     print(f"\n📊 RAPPORT FINAL:")
@@ -637,7 +755,7 @@ def run_search(method, first_name=None, last_name=None, scopus_id=None, year=Non
         wb = Workbook()
         ws = wb.active
         ws.title = "Publications"
-        headers_excel = ["N°", "Titre", "Journal", "Date", "Citations", "Co-auteurs", "SJR", "H-index", "Quartile", "ISSN"]
+        headers_excel = ["N°", "Titre", "Journal", "Date", "Type", "Citations", "Co-auteurs", "SJR", "H-index", "Quartile", "ISSN", "DOI"]
         ws.append(headers_excel)
         for row in results:
             ws.append(row)
@@ -652,8 +770,8 @@ def run_search(method, first_name=None, last_name=None, scopus_id=None, year=Non
         pdf = PDF()
         pdf.add_page()
         pdf.add_title(full_name, year)
-        pdf.render_table(results, ["N°", "Titre", "Journal", "Date", "Citations", "Co-auteurs", "SJR", "H-index", "Quartile", "ISSN"],
-                         [8, 50, 45, 25, 20, 40, 15, 18, 18, 25], 4)
+        pdf.render_table(results, ["N°", "Titre", "Journal", "Date", "Type", "Citations", "Co-auteurs", "SJR", "H-index", "Quartile", "ISSN", "DOI"],
+                        [8, 50, 40, 18, 25, 15, 30, 12, 12, 12, 18, 25], 4)
         pdf_filename = f"output/{base_filename}.pdf"
         pdf.output(pdf_filename)
         print(f"📄 PDF généré: {pdf_filename}")
@@ -665,13 +783,15 @@ def run_search(method, first_name=None, last_name=None, scopus_id=None, year=Non
             "title": row[1],
             "journal": row[2],
             "year": row[3],
-            "citations": row[4],
-            "coauthors": row[5],
-            "sjr": row[6],
-            "h_index": row[7],
-            "quartile": row[8],
-            "issn": row[9],
-        })
+            "document_type": row[4],
+            "citations": row[5],
+            "coauthors": row[6],
+            "sjr": row[7],
+            "h_index": row[8],
+            "quartile": row[9],
+            "issn": row[10],
+            "doi": row[11],
+    })
 
     print(f"✅ Traitement terminé!")
     
@@ -723,22 +843,3 @@ def calculate_citation_stats(publications_data):
         "h_index": h_index,
         "publications_count": len(citations)
     }
-
-# Exemple d'utilisation
-if __name__ == "__main__":
-    # Exemple de recherche par nom
-    result = run_search(
-        method="name",
-        first_name="John",
-        last_name="Smith",
-        year=2023,
-        export_type="both"
-    )
-    
-    # Calcul des statistiques
-    stats = calculate_citation_stats(result["data"])
-    print("Statistiques des citations:")
-    print(f"Total citations: {stats.get('total_citations', 0)}")
-    print(f"Citations moyennes: {stats.get('average_citations', 0)}")
-    print(f"Citations max: {stats.get('max_citations', 0)}")
-    print(f"H-index: {stats.get('h_index', 0)}")

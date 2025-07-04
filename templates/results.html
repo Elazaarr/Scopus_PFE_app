@@ -15,6 +15,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
         .header {
@@ -44,7 +45,7 @@
             margin: 0 auto;
             padding: 15px 10px;
             gap: 15px;
-            height: calc(100vh - 80px);
+            min-height: calc(100vh - 80px);
         }
 
         /* Sidebar - Plus compacte */
@@ -196,17 +197,15 @@
         /* Publications table - Zone maximisée avec hauteur augmentée */
         .publications-container {
             flex: 1;
-            overflow: hidden;
             display: flex;
             flex-direction: column;
-            min-height: calc(100vh - 300px);
         }
 
         .table-wrapper {
-            flex: 1;
-            overflow: auto;
+            overflow-x: auto;
             border-radius: 0 0 12px 12px;
-            min-height: calc(100vh - 350px);
+            max-height: 70vh;
+            overflow-y: auto;
         }
 
         .publications-table {
@@ -242,36 +241,57 @@
             background: linear-gradient(135deg, #f8f9ff, #f0f2ff);
         }
 
-        /* Optimisation des largeurs des colonnes */
+        /* Optimisation des largeurs des colonnes (sans colonne N°) */
         .publications-table th:nth-child(1),
-        .publications-table td:nth-child(1) { width: 3%; text-align: center; } /* N° */
-        
+        .publications-table td:nth-child(1) { width: 30%; } /* Titre */
+
         .publications-table th:nth-child(2),
-        .publications-table td:nth-child(2) { width: 32%; } /* Titre - Plus large */
-        
+        .publications-table td:nth-child(2) { width: 22%; } /* Journal */
+
         .publications-table th:nth-child(3),
-        .publications-table td:nth-child(3) { width: 22%; } /* Journal - Plus large */
-        
+        .publications-table td:nth-child(3) { width: 15%; text-align: center; } /* Type - Augmenté */
+
         .publications-table th:nth-child(4),
-        .publications-table td:nth-child(4) { width: 18%; } /* Co-auteurs */
-        
+        .publications-table td:nth-child(4) { width: 11%; } /* Co-auteurs - Diminué */
+
         .publications-table th:nth-child(5),
-        .publications-table td:nth-child(5) { width: 5%; text-align: center; } /* Année */
-        
+        .publications-table td:nth-child(5) { width: 8%; text-align: center; } /* Année */
+
         .publications-table th:nth-child(6),
-        .publications-table td:nth-child(6) { width: 6%; text-align: center; } /* Citations */
-        
+        .publications-table td:nth-child(6) { width: 8%; text-align: center; } /* Citations - Augmenté */
+
         .publications-table th:nth-child(7),
         .publications-table td:nth-child(7) { width: 5%; text-align: center; } /* SJR */
-        
+
         .publications-table th:nth-child(8),
         .publications-table td:nth-child(8) { width: 5%; text-align: center; } /* H-Index */
-        
+
         .publications-table th:nth-child(9),
         .publications-table td:nth-child(9) { width: 6%; text-align: center; } /* Quartile */
-        
+
         .publications-table th:nth-child(10),
         .publications-table td:nth-child(10) { width: 8%; text-align: center; } /* ISSN */
+
+        .publications-table th:nth-child(11),
+        .publications-table td:nth-child(11) { width: 10%; text-align: center; } /* DOI */
+
+        .doi-link {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 0.8rem;
+            word-break: break-all;
+        }
+
+        .doi-link:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .doi-value {
+            font-size: 0.8rem;
+            max-width: 120px;
+            word-break: break-all;
+        }
 
         .publication-title {
             font-weight: 600;
@@ -387,6 +407,79 @@
             font-size: 0.75rem;
         }
 
+        /* Styles pour les types de documents */
+        .document-type {
+            text-align: center;
+        }
+
+        .document-type-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .doc-type-article {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .doc-type-conference {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+        }
+
+        .doc-type-review {
+            background: linear-gradient(135deg, #FF9800, #F57C00);
+            color: white;
+        }
+
+        .doc-type-book {
+            background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+            color: white;
+        }
+
+        .doc-type-default {
+            background: linear-gradient(135deg, #757575, #616161);
+            color: white;
+        }
+
+        /* Styles pour la scrollbar */
+        .table-wrapper::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .table-wrapper::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .table-wrapper::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 4px;
+        }
+
+        .table-wrapper::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #5a6fd8, #6a4190);
+        }
+
+        /* Amélioration du scroll sur la page entière */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Assurer que le contenu peut s'étendre */
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
         .issn-value {
             font-family: 'Courier New', monospace;
             font-size: 0.7rem;
@@ -444,29 +537,7 @@
             color: white;
         }
 
-        /* Flash messages */
-        .flash-messages {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-        }
 
-        .flash-message {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 12px 16px;
-            border-radius: 6px;
-            margin-bottom: 8px;
-            border: 1px solid #f5c6cb;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            animation: slideInRight 0.3s ease;
-        }
-
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
 
         /* Responsive design optimisé */
         @media (max-width: 1400px) {
@@ -517,12 +588,9 @@
                 height: 80vh;
             }
 
-            .publications-container {
-                min-height: calc(80vh - 200px);
-            }
-
             .table-wrapper {
-                min-height: calc(80vh - 250px);
+                max-height: 60vh;
+                overflow-y: auto;
             }
         }
 
@@ -588,16 +656,7 @@
     </style>
 </head>
 <body>
-    <!-- Flash messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="flash-messages">
-                {% for category, message in messages %}
-                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
+
 
     <div class="header">
         <h1>Résultats de recherche Scopus</h1>
@@ -675,9 +734,9 @@
                         <table class="publications-table" id="publicationsTable">
                             <thead>
                                 <tr>
-                                    <th>N°</th>
                                     <th>Titre</th>
                                     <th>Journal</th>
+                                    <th>Type</th>
                                     <th>Co-auteurs</th>
                                     <th>Année</th>
                                     <th>Citations</th>
@@ -685,17 +744,35 @@
                                     <th>H-Index</th>
                                     <th>Quartile</th>
                                     <th>ISSN</th>
+                                    <th>DOI</th>
                                 </tr>
                             </thead>
                             <tbody id="publicationsTableBody">
                                 {% for pub in publications %}
                                 <tr>
-                                    <td>{{ pub.number }}</td>
                                     <td>
                                         <div class="publication-title">{{ pub.title or 'Sans titre' }}</div>
                                     </td>
                                     <td>
                                         <div class="publication-journal">{{ pub.journal or 'Journal non spécifié' }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="document-type">
+                                            {% set doc_type = pub.document_type if pub.document_type and pub.document_type != 'N/A' else 'Non spécifié' %}
+                                            {% set type_class = 'doc-type-default' %}
+                                            {% if doc_type == 'Article' %}
+                                                {% set type_class = 'doc-type-article' %}
+                                            {% elif doc_type == 'Conference Paper' %}
+                                                {% set type_class = 'doc-type-conference' %}
+                                            {% elif doc_type == 'Review' %}
+                                                {% set type_class = 'doc-type-review' %}
+                                            {% elif doc_type == 'Book Chapter' %}
+                                                {% set type_class = 'doc-type-book' %}
+                                            {% elif doc_type == 'Book' %}
+                                                {% set type_class = 'doc-type-book' %}
+                                            {% endif %}
+                                            <span class="document-type-badge {{ type_class }}">{{ doc_type }}</span>
+                                        </div>
                                     </td>
                                     <td>
                                         <div class="coauthors-list">
@@ -741,6 +818,13 @@
                                     </td>
                                     <td class="issn-value">
                                         {{ pub.issn if pub.issn and pub.issn != 'N/A' else '-' }}
+                                    </td>
+                                    <td class="doi-value">
+                                        {% if pub.doi and pub.doi != '-' and pub.doi != 'N/A' %}
+                                            <a href="https://doi.org/{{ pub.doi }}" target="_blank" class="doi-link">{{ pub.doi }}</a>
+                                        {% else %}
+                                            -
+                                        {% endif %}
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -842,14 +926,31 @@
                     citationClass += ' citations-medium';
                 }
                 
+                // Formatage du type de document avec badge coloré
+                const docType = pub.document_type && pub.document_type !== 'N/A' ? pub.document_type : 'Non spécifié';
+                let docTypeClass = 'doc-type-default';
+                if (docType === 'Article') {
+                    docTypeClass = 'doc-type-article';
+                } else if (docType === 'Conference Paper') {
+                    docTypeClass = 'doc-type-conference';
+                } else if (docType === 'Review') {
+                    docTypeClass = 'doc-type-review';
+                } else if (docType === 'Book Chapter' || docType === 'Book') {
+                    docTypeClass = 'doc-type-book';
+                }
+
                 return `
                     <tr>
-                        <td>${pub.number || '-'}</td>
                         <td>
                             <div class="publication-title">${pub.title || 'Sans titre'}</div>
                         </td>
                         <td>
                             <div class="publication-journal">${pub.journal || 'Journal non spécifié'}</div>
+                        </td>
+                        <td>
+                            <div class="document-type">
+                                <span class="document-type-badge ${docTypeClass}">${docType}</span>
+                            </div>
                         </td>
                         <td>
                             <div class="coauthors-list">${pub.coauthors || 'Non spécifiés'}</div>
@@ -860,6 +961,12 @@
                         <td class="metric-value">${pub.h_index && pub.h_index !== 'N/A' ? pub.h_index : '-'}</td>
                         <td><span class="quartile-badge ${quartileClass}">${quartileDisplay}</span></td>
                         <td class="issn-value">${pub.issn && pub.issn !== 'N/A' ? pub.issn : '-'}</td>
+                        <td class="doi-value">
+                            ${pub.doi && pub.doi !== '-' && pub.doi !== 'N/A' ?
+                                `<a href="https://doi.org/${pub.doi}" target="_blank" class="doi-link">${pub.doi}</a>` :
+                                '-'
+                            }
+                        </td>
                     </tr>
                 `;
             }).join('');
@@ -945,16 +1052,7 @@
             document.getElementById('quartileFilter').addEventListener('change', filterPublications);
         }
 
-        // Auto-hide flash messages
-        document.addEventListener('DOMContentLoaded', function() {
-            const flashMessages = document.querySelectorAll('.flash-message');
-            flashMessages.forEach(message => {
-                setTimeout(() => {
-                    message.style.animation = 'slideInRight 0.3s ease reverse';
-                    setTimeout(() => message.remove(), 300);
-                }, 5000);
-            });
-        });
+
     </script>
 </body>
 </html>
